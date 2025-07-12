@@ -1,0 +1,23 @@
+# PhishGuard Demo Backend - Minimal Dependencies
+# Essential FastAPI stack
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+
+# Database
+sqlalchemy==2.0.23
+aiosqlite==0.19.0
+
+# Configuration and validation
+pydantic==2.5.0
+pydantic-settings==2.1.0
+
+# Logging
+structlog==23.2.0
+
+# CORS and security
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
+# Development tools (optional)
+python-dotenv==1.0.0 
