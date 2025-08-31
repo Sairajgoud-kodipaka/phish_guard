@@ -8,10 +8,13 @@ import {
   ExclamationTriangleIcon,
   EnvelopeIcon,
   ClockIcon,
+  ChartBarIcon,
 } from '@heroicons/react/24/outline'
 import { backendApi } from '@/lib/backend-api'
 import { DashboardStats } from '@/types'
 import { EmailAnalyzer } from '@/components/email/email-analyzer'
+import { EmailPreviewModal } from '@/components/email/email-preview-modal'
+import { generateDemoEmailData } from '@/lib/demo-data'
 
 interface AnalyzedEmail {
   id: number
@@ -33,6 +36,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showEmailAnalyzer, setShowEmailAnalyzer] = useState(false)
+  const [selectedEmailForPreview, setSelectedEmailForPreview] = useState<AnalyzedEmail | null>(null)
 
   // Load dashboard data
   useEffect(() => {
@@ -101,6 +105,71 @@ export default function DashboardPage() {
     loadDashboardData()
   }
 
+  const convertToPreviewData = (email: AnalyzedEmail) => {
+    // Convert backend email data to preview modal format
+    return {
+      id: email.id,
+      from: email.sender_email,
+      subject: email.subject || 'No Subject',
+      body: 'Email content would be loaded here...', // This would come from backend
+      receivedAt: (() => {
+        const date = new Date(email.created_at)
+        return isNaN(date.getTime()) ? new Date() : date
+      })(),
+      threatScore: Math.round(email.threat_score * 100),
+      threatLevel: email.threat_level,
+      isPhishing: email.is_phishing,
+      isSpam: email.is_spam,
+      isMalware: email.is_malware,
+      actionTaken: email.action_taken,
+      processingTime: email.processing_time || 0,
+      confidence: 85, // This would come from backend
+      analysis: {
+        nlpScore: Math.round(email.threat_score * 100),
+        urlScore: Math.round(email.threat_score * 80),
+        headerScore: Math.round(email.threat_score * 60),
+        anomalyScore: Math.round(email.threat_score * 90),
+        overallScore: Math.round(email.threat_score * 100),
+        patterns: {
+          suspiciousKeywords: email.is_phishing ? ['urgent', 'verify', 'account', 'suspended'] : [],
+          urls: [],
+          attachments: [],
+          senderAnalysis: {
+            reputation: 75,
+            domainAge: 365,
+            spfRecord: true,
+            dkimRecord: true,
+            dmarcRecord: true,
+            suspiciousIndicators: []
+          },
+          contentAnalysis: {
+            sentiment: (email.is_phishing ? 'negative' : 'neutral') as 'negative' | 'positive' | 'neutral',
+            urgency: (email.is_phishing ? 'high' : 'low') as 'low' | 'medium' | 'high',
+            impersonation: email.is_phishing,
+            socialEngineering: email.is_phishing,
+            financialPressure: email.is_phishing,
+            authorityPressure: email.is_phishing
+          }
+        },
+        mlModel: {
+          name: 'PhishGuard ML v2.1',
+          version: '2.1.0',
+          accuracy: 98.5,
+          lastUpdated: '2024-12-31',
+          features: ['NLP Analysis', 'URL Scanning', 'Header Analysis', 'Anomaly Detection']
+        },
+                 threats: email.is_phishing ? [{
+           type: 'Phishing',
+           score: Math.round(email.threat_score * 100),
+           description: 'Suspicious email content indicating potential phishing attempt',
+           indicators: ['Urgent language', 'Account verification request', 'Suspicious sender'],
+           severity: (email.threat_score > 0.8 ? 'high' : email.threat_score > 0.6 ? 'medium' : 'low') as 'high' | 'medium' | 'low',
+           confidence: 85
+         }] : []
+      }
+    }
+  }
+
   const formatThreatLevel = (level: string, score: number) => {
     switch (level.toLowerCase()) {
       case 'critical':
@@ -153,7 +222,7 @@ export default function DashboardPage() {
             Upload an email file or paste email content for AI-powered threat detection
           </CardDescription>
         </CardHeader>
-        <CardContent className="flex justify-center pb-8">
+        <CardContent className="flex justify-center pb-8 space-x-4">
           <Button 
             size="lg"
             className="h-16 px-12 text-lg"
@@ -161,6 +230,15 @@ export default function DashboardPage() {
           >
             <EnvelopeIcon className="h-6 w-6 mr-3" />
             Analyze Email
+          </Button>
+          <Button 
+            size="lg"
+            variant="outline"
+            className="h-16 px-8 text-lg"
+            onClick={() => setSelectedEmailForPreview(generateDemoEmailData() as any)}
+          >
+            <ChartBarIcon className="h-6 w-6 mr-3" />
+            Demo Modal
           </Button>
         </CardContent>
       </Card>
@@ -225,10 +303,11 @@ export default function DashboardPage() {
                 const threatScore = Math.round(email.threat_score * 100)
                 
                 return (
-                  <div 
-                    key={email.id} 
-                    className={`flex items-center justify-between p-4 rounded-lg border ${threatInfo.bgColor} ${threatInfo.borderColor}`}
-                  >
+                                  <div 
+                  key={email.id} 
+                  className={`flex items-center justify-between p-4 rounded-lg border ${threatInfo.bgColor} ${threatInfo.borderColor} cursor-pointer hover:shadow-md transition-shadow`}
+                  onClick={() => setSelectedEmailForPreview(email)}
+                >
                     <div className="flex items-center space-x-3">
                       {email.threat_level === 'clean' || email.threat_level === 'low' ? (
                         <ShieldCheckIcon className="h-5 w-5 text-green-500" />
@@ -258,6 +337,9 @@ export default function DashboardPage() {
                       <div className={`text-xs font-medium uppercase ${getActionColor(email.action_taken)}`}>
                         {email.action_taken}
                       </div>
+                      <div className="text-xs text-gray-500 mt-1">
+                        Click to view details →
+                      </div>
                     </div>
                   </div>
                 )
@@ -268,6 +350,14 @@ export default function DashboardPage() {
               <EnvelopeIcon className="h-12 w-12 mx-auto mb-4 text-gray-300" />
               <p>No emails analyzed yet.</p>
               <p className="text-sm">Upload an email above to see analysis results here!</p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="mt-4"
+                onClick={() => setSelectedEmailForPreview(generateDemoEmailData() as any)}
+              >
+                View Demo Analysis
+              </Button>
             </div>
           )}
         </CardContent>
@@ -280,6 +370,13 @@ export default function DashboardPage() {
           onEmailAnalyzed={handleEmailAnalyzed}
         />
       )}
+
+      {/* Email Preview Modal */}
+      <EmailPreviewModal
+        email={selectedEmailForPreview ? convertToPreviewData(selectedEmailForPreview) : null}
+        isOpen={!!selectedEmailForPreview}
+        onClose={() => setSelectedEmailForPreview(null)}
+      />
     </div>
   )
 } 

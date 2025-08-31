@@ -1,115 +1,264 @@
-# PhishGuard - Quick Start Guide
+# 🚀 PhishGuard Startup Guide
 
-## 🚀 Get PhishGuard Running in 2 Steps
+## 🎯 One-Click Application Startup
 
-### Step 1: Start Backend (Port 8001)
+PhishGuard is now equipped with **single-script startup** that automatically:
+- ✅ Checks system requirements
+- ✅ Installs all dependencies
+- ✅ Starts both backend and frontend services
+- ✅ Opens the application in your browser
+- ✅ Tests ML functionality
+- ✅ Provides real-time status monitoring
+
+---
+
+## 🖥️ **Windows Users (Recommended)**
+
+### **Option 1: PowerShell Script (Best for Windows 10/11)**
+1. **Right-click** `start_phishguard.ps1`
+2. **Select** "Run with PowerShell"
+3. **Wait** for the automatic setup (5-10 minutes)
+4. **Enjoy** your running PhishGuard application!
+
+### **Option 2: Batch File (Classic Windows)**
+1. **Double-click** `start_phishguard.bat`
+2. **Wait** for the automatic setup (5-10 minutes)
+3. **Enjoy** your running PhishGuard application!
+
+### **Option 3: Command Line**
+```cmd
+# PowerShell (recommended)
+powershell -ExecutionPolicy Bypass -File start_phishguard.ps1
+
+# Batch file
+start_phishguard.bat
+```
+
+---
+
+## 🐧 **Linux/Mac Users**
+
+### **Option 1: Shell Script**
+```bash
+./start_phishguard.sh
+```
+
+### **Option 2: Make Executable First**
+```bash
+chmod +x start_phishguard.sh
+./start_phishguard.sh
+```
+
+---
+
+## 🐍 **Python Users (Cross-Platform)**
+
+### **Run Python Script**
+```bash
+python start_phishguard.py
+```
+
+---
+
+## 📋 **What Happens Automatically**
+
+### **1. System Check** 🔍
+- ✅ Python 3.8+ verification
+- ✅ Node.js verification  
+- ✅ npm verification
+- ✅ Directory structure check
+
+### **2. Dependency Installation** 📦
+- ✅ Backend Python packages
+- ✅ Frontend npm packages
+- ✅ ML/AI libraries
+- ✅ Database drivers
+
+### **3. Service Startup** 🚀
+- ✅ FastAPI backend (port 8000)
+- ✅ Next.js frontend (port 3000)
+- ✅ Automatic service monitoring
+- ✅ Health check verification
+
+### **4. Application Ready** 🎯
+- ✅ Browser automatically opens
+- ✅ Frontend dashboard accessible
+- ✅ API documentation available
+- ✅ ML endpoints functional
+
+---
+
+## 🌐 **Access Your Application**
+
+Once the startup script completes:
+
+- **🎨 Frontend Dashboard**: http://localhost:3000
+- **🔒 Backend API**: http://localhost:8000
+- **📚 API Documentation**: http://localhost:8000/docs
+- **🤖 ML Endpoints**: Available via API
+
+---
+
+## 🛑 **Stopping the Application**
+
+### **Windows (Batch File)**
+- Close the command windows that opened
+- Or press `Ctrl+C` in the launcher
+
+### **Windows (PowerShell)**
+- Close the command windows that opened
+- Or press `Enter` in the launcher
+
+### **Linux/Mac (Shell Script)**
+- Press `Ctrl+C` in the terminal
+
+### **Python Script**
+- Press `Ctrl+C` in the terminal
+
+---
+
+## 🔧 **Manual Startup (Alternative)**
+
+If you prefer manual control:
+
+### **Backend Service**
 ```bash
 cd backend
-python run_production.py
+python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-You should see:
-```
-🚀 Starting PhishGuard Production Backend...
-📊 Full ML capabilities enabled  
-🔒 Advanced threat analysis active
-🌐 Server will be available at: http://localhost:8001
-```
-
-### Step 2: Start Frontend (Port 3000)
+### **Frontend Service**
 ```bash
 cd frontend
 npm run dev
 ```
 
-You should see:
-```
-▲ Next.js 14.0.0
-- Local:        http://localhost:3000
-- Network:      http://0.0.0.0:3000
-```
+---
 
-## ✅ Verify Everything Works
+## 🚨 **Troubleshooting**
 
-### Test Backend Connection:
+### **Common Issues**
+
+#### **1. Port Already in Use**
 ```bash
+# Check what's using the ports
+netstat -an | findstr ":8000\|:3000"  # Windows
+lsof -i :8000,3000                     # Linux/Mac
+```
+
+#### **2. Dependencies Failed**
+```bash
+# Reinstall backend dependencies
 cd backend
-python test_connection.py
+pip install -r requirements.txt
+
+# Reinstall frontend dependencies  
+cd frontend
+npm install
 ```
 
-This will test all endpoints and show if everything is working.
+#### **3. Services Not Starting**
+- Check if Python and Node.js are properly installed
+- Ensure you have sufficient permissions
+- Check firewall settings
 
-### Test Frontend:
-1. Open http://localhost:3000/dashboard
-2. Click "Analyze Email" 
-3. Paste a sample phishing email
-4. You should see real threat analysis results
-
-## 🔧 Troubleshooting
-
-### Backend Issues:
-- **Port 8001 in use?** Change port in `backend/run_production.py`
-- **Database errors?** Delete `backend/phishguard.db` and restart
-- **Import errors?** Run `pip install fastapi uvicorn sqlalchemy aiosqlite`
-
-### Frontend Issues:
-- **Connection refused?** Make sure backend is running on port 8001
-- **CORS errors?** Backend has CORS enabled for all origins
-- **Loading forever?** Check browser console for specific error messages
-
-### Connection Test:
+#### **4. ML Model Issues**
 ```bash
-# Test if backend is responding
-curl http://localhost:8001/health
-
-# Should return: {"status":"healthy","service":"PhishGuard Backend"...}
+# Test ML functionality
+cd backend
+python test_with_sample_data.py
 ```
 
-## 📧 Sample Phishing Email for Testing
-
-Paste this into the email analyzer to see the threat detection in action:
-
-```
-From: urgent-payment@fake-bank.com
-To: user@example.com  
-Subject: URGENT: Verify Your Account Now!
-
-Dear Customer,
-
-Your account has been suspended due to suspicious activity. 
-Click here to verify your account immediately: http://fake-bank.com/verify
-
-This is urgent and must be completed within 24 hours.
-
-Thank you,
-Security Team
+#### **5. PowerShell Execution Policy (Windows)**
+If you get execution policy errors:
+```powershell
+# Run as Administrator
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
 
-Expected result: **High threat score** with phishing indicators detected.
+---
 
-## 🎯 What Should Happen
+## 📊 **System Requirements**
 
-1. **Backend** analyzes emails using advanced heuristics
-2. **Database** stores all analyzed emails with threat details  
-3. **Frontend** shows real-time stats and analysis results
-4. **Dashboard** updates with actual data from analyzed emails
+### **Minimum Requirements**
+- **OS**: Windows 10+, macOS 10.14+, Ubuntu 18.04+
+- **Python**: 3.8 or higher
+- **Node.js**: 16.0 or higher
+- **RAM**: 4GB minimum, 8GB recommended
+- **Storage**: 2GB free space
 
-## 📊 Key Features Working
+### **Recommended Requirements**
+- **OS**: Windows 11, macOS 12+, Ubuntu 20.04+
+- **Python**: 3.9 or higher
+- **Node.js**: 18.0 or higher
+- **RAM**: 8GB or higher
+- **Storage**: 5GB free space
 
-- ✅ Real email parsing (.eml, .msg, text)
-- ✅ Advanced threat analysis (phishing, spam, malware detection)
-- ✅ URL scanning and domain reputation
-- ✅ Attachment analysis
-- ✅ Authentication validation (SPF/DKIM/DMARC)
-- ✅ Real database storage
-- ✅ Live dashboard with actual statistics
-- ✅ Recently analyzed emails display
+---
 
-## 🔗 Endpoints Available
+## 🎉 **Success Indicators**
 
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:8001/docs
-- Health Check: http://localhost:8001/health
-- Email Analysis: http://localhost:8001/api/v1/emails/analyze-text
+When PhishGuard starts successfully, you'll see:
 
-That's it! You now have a fully working AI-powered email security platform. 
+```
+===============================================================
+PHISHGUARD STATUS
+===============================================================
+Backend: RUNNING (http://localhost:8000)
+Frontend: RUNNING (http://localhost:3000)
+
+Your PhishGuard application is ready!
+Access your application at: http://localhost:3000
+API documentation at: http://localhost:8000/docs
+===============================================================
+```
+
+---
+
+## 🔍 **Verification Commands**
+
+### **Check Backend Status**
+```bash
+curl http://localhost:8000/docs
+```
+
+### **Check Frontend Status**
+```bash
+curl http://localhost:3000
+```
+
+### **Check ML Endpoints**
+```bash
+curl http://localhost:8000/api/v1/threats/ml-model-info
+```
+
+---
+
+## 💡 **Pro Tips**
+
+1. **First Run**: The initial startup may take 5-10 minutes for dependency installation
+2. **Subsequent Runs**: Much faster as dependencies are already installed
+3. **Development Mode**: Both services run with auto-reload enabled
+4. **Browser**: The script automatically opens your default browser
+5. **Background**: Services continue running even if you close the launcher
+6. **Windows Users**: PowerShell script provides better error handling and colored output
+
+---
+
+## 🆘 **Need Help?**
+
+If you encounter issues:
+
+1. **Check the error messages** in the terminal
+2. **Verify system requirements** are met
+3. **Try manual startup** as an alternative
+4. **Check the troubleshooting section** above
+5. **Review the logs** in the service windows
+
+---
+
+## 🎯 **Ready to Go!**
+
+Your PhishGuard application is now equipped with **one-click startup** that handles everything automatically. Just run the appropriate script for your operating system and enjoy your AI-powered email security platform!
+
+**🚀 Happy PhishGuarding! 🚀** 

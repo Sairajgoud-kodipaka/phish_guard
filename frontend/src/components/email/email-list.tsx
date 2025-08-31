@@ -247,7 +247,15 @@ export function EmailList({ className }: EmailListProps) {
                           {threatLevel.label}
                         </div>
                       </div>
-                      <Button variant="ghost" size="sm">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          // This would open the email preview modal
+                          console.log('View email details:', email.id)
+                        }}
+                      >
                         <EyeIcon className="h-4 w-4" />
                       </Button>
                     </div>

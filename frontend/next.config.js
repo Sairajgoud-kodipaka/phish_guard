@@ -63,7 +63,7 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "connect-src 'self' http://localhost:8001 https://localhost:8001 ws://localhost:8001",
+              "connect-src 'self' http://localhost:8000 https://localhost:8000 ws://localhost:8000",
               "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https:",

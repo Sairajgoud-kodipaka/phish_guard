@@ -525,3 +525,72 @@ async def get_unresolved_threats(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get unresolved threats: {str(e)}"
         ) 
+
+@router.post("/analyze-email-ml")
+async def analyze_email_ml(
+    email_content: str = Form(..., description="Email content to analyze"),
+    current_user: dict = Depends(get_current_user_from_token)
+):
+    """Analyze email content using ML model for threat detection"""
+    try:
+        from app.services.enhanced_threat_analyzer import enhanced_analyzer
+        
+        # Analyze the email using ML model
+        analysis_result = await enhanced_analyzer.analyze_email(email_content)
+        
+        # Create a threat record if spam is detected
+        if analysis_result.get('is_spam', False):
+            threat_data = {
+                'email_content': email_content[:500],  # Truncate for storage
+                'threat_type': 'spam',
+                'severity': analysis_result.get('threat_level', 'medium'),
+                'confidence': analysis_result.get('confidence', 0.0),
+                'ml_model_used': analysis_result.get('model_used', 'Unknown'),
+                'analysis_timestamp': datetime.utcnow().isoformat()
+            }
+        else:
+            threat_data = {
+                'email_content': email_content[:500],
+                'threat_type': 'safe',
+                'severity': 'none',
+                'confidence': analysis_result.get('confidence', 0.0),
+                'ml_model_used': analysis_result.get('model_used', 'Unknown'),
+                'analysis_timestamp': datetime.utcnow().isoformat()
+            }
+        
+        return {
+            "success": True,
+            "analysis": analysis_result,
+            "threat_data": threat_data,
+            "user_id": current_user.get("user_id"),
+            "organization_id": current_user.get("organization_id")
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to analyze email: {str(e)}"
+        )
+
+@router.get("/ml-model-info")
+async def get_ml_model_info(
+    current_user: dict = Depends(get_current_user_from_token)
+):
+    """Get information about the ML model status"""
+    try:
+        from app.services.enhanced_threat_analyzer import enhanced_analyzer
+        
+        model_info = await enhanced_analyzer.get_model_info()
+        
+        return {
+            "success": True,
+            "model_info": model_info,
+            "user_id": current_user.get("user_id"),
+            "organization_id": current_user.get("organization_id")
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get model info: {str(e)}"
+        ) 
