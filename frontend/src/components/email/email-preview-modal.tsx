@@ -182,7 +182,7 @@ export function EmailPreviewModal({ email, isOpen, onClose }: EmailPreviewModalP
             </div>
             <div className="text-right">
               <Badge variant={email.actionTaken === 'block' ? 'destructive' : email.actionTaken === 'quarantine' ? 'warning' : 'success'}>
-                {email.actionTaken.toUpperCase()}
+                {email.actionTaken?.toUpperCase() || 'UNKNOWN'}
               </Badge>
             </div>
           </div>

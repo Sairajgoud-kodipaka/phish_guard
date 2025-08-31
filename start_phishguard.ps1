@@ -1,29 +1,45 @@
 # PhishGuard Application Startup Script (PowerShell)
-# Starts both frontend and backend services and makes the application ready
+# ALL-IN-ONE SCRIPT - Setup and run PhishGuard for your team
+# 
+# WHAT THIS SCRIPT DOES:
+# 1. Checks system requirements (Python, Node.js, npm)
+# 2. Installs all dependencies automatically
+# 3. Starts both backend and frontend services
+# 4. Opens the application in your browser
+# 5. Provides clear status and instructions
+#
+# FOR YOUR TEAMMATES:
+# - Just run this script on any Windows PC
+# - It will handle everything automatically
+# - No manual setup required!
 
 Write-Host "===============================================================" -ForegroundColor Cyan
-Write-Host "PHISHGUARD - AI-Powered Email Security Platform" -ForegroundColor Yellow
+Write-Host "🚀 PHISHGUARD - AI-Powered Email Security Platform" -ForegroundColor Yellow
 Write-Host "===============================================================" -ForegroundColor Cyan
-Write-Host "Backend: FastAPI + ML Models" -ForegroundColor Green
-Write-Host "Frontend: Next.js + React" -ForegroundColor Blue
-Write-Host "AI: Spam Detection & Threat Analysis" -ForegroundColor Magenta
+Write-Host "📋 This is an ALL-IN-ONE script for your team!" -ForegroundColor Green
+Write-Host "🔧 Automatically sets up and runs everything" -ForegroundColor Green
+Write-Host "🌐 Backend: FastAPI + ML Models (Port 8000)" -ForegroundColor Blue
+Write-Host "🎨 Frontend: Next.js + React (Port 3000)" -ForegroundColor Magenta
+Write-Host "🤖 AI: Spam Detection & Threat Analysis" -ForegroundColor Cyan
 Write-Host "===============================================================" -ForegroundColor Cyan
 
 Write-Host ""
-Write-Host "Checking system requirements..." -ForegroundColor Yellow
+Write-Host "🔍 Checking system requirements..." -ForegroundColor Yellow
 
 # Check if Python is available
 try {
     $pythonVersion = python --version 2>&1
     if ($LASTEXITCODE -eq 0) {
-        Write-Host "Python found: $pythonVersion" -ForegroundColor Green
+        Write-Host "✅ Python found: $pythonVersion" -ForegroundColor Green
     } else {
-        Write-Host "Python not found. Please install Python 3.8+" -ForegroundColor Red
+        Write-Host "❌ Python not found. Please install Python 3.8+" -ForegroundColor Red
+        Write-Host "💡 Download from: https://www.python.org/downloads/" -ForegroundColor Yellow
         Read-Host "Press Enter to exit"
         exit 1
     }
 } catch {
-    Write-Host "Python not found. Please install Python 3.8+" -ForegroundColor Red
+    Write-Host "❌ Python not found. Please install Python 3.8+" -ForegroundColor Red
+    Write-Host "💡 Download from: https://www.python.org/downloads/" -ForegroundColor Yellow
     Read-Host "Press Enter to exit"
     exit 1
 }
@@ -32,14 +48,16 @@ try {
 try {
     $nodeVersion = node --version 2>&1
     if ($LASTEXITCODE -eq 0) {
-        Write-Host "Node.js found: $nodeVersion" -ForegroundColor Green
+        Write-Host "✅ Node.js found: $nodeVersion" -ForegroundColor Green
     } else {
-        Write-Host "Node.js not found. Please install Node.js" -ForegroundColor Red
+        Write-Host "❌ Node.js not found. Please install Node.js" -ForegroundColor Red
+        Write-Host "💡 Download from: https://nodejs.org/" -ForegroundColor Yellow
         Read-Host "Press Enter to exit"
         exit 1
     }
 } catch {
-    Write-Host "Node.js not found. Please install Node.js" -ForegroundColor Red
+    Write-Host "❌ Node.js not found. Please install Node.js" -ForegroundColor Red
+    Write-Host "💡 Download from: https://nodejs.org/" -ForegroundColor Yellow
     Read-Host "Press Enter to exit"
     exit 1
 }
@@ -48,76 +66,89 @@ try {
 try {
     $npmVersion = npm --version 2>&1
     if ($LASTEXITCODE -eq 0) {
-        Write-Host "npm found: $npmVersion" -ForegroundColor Green
+        Write-Host "✅ npm found: $npmVersion" -ForegroundColor Green
     } else {
-        Write-Host "npm not found. Please install npm" -ForegroundColor Red
+        Write-Host "❌ npm not found. Please install npm" -ForegroundColor Red
+        Write-Host "💡 Usually comes with Node.js" -ForegroundColor Yellow
         Read-Host "Press Enter to exit"
         exit 1
     }
 } catch {
-    Write-Host "npm not found. Please install npm" -ForegroundColor Red
+    Write-Host "❌ npm not found. Please install npm" -ForegroundColor Red
+    Write-Host "💡 Usually comes with Node.js" -ForegroundColor Yellow
     Read-Host "Press Enter to exit"
     exit 1
 }
 
 Write-Host ""
-Write-Host "Installing dependencies..." -ForegroundColor Yellow
+Write-Host "📦 Installing dependencies..." -ForegroundColor Yellow
 
 # Install backend dependencies
-Write-Host "Installing backend dependencies..." -ForegroundColor Blue
+Write-Host "🔧 Installing backend dependencies..." -ForegroundColor Blue
 Set-Location "backend"
 try {
+    Write-Host "   Installing Python packages..." -ForegroundColor Gray
     python -m pip install -r requirements.txt
     if ($LASTEXITCODE -eq 0) {
-        Write-Host "Backend dependencies installed" -ForegroundColor Green
+        Write-Host "✅ Backend dependencies installed successfully" -ForegroundColor Green
     } else {
-        Write-Host "Failed to install backend dependencies" -ForegroundColor Red
+        Write-Host "❌ Failed to install backend dependencies" -ForegroundColor Red
+        Write-Host "💡 Try running: python -m pip install --upgrade pip" -ForegroundColor Yellow
         Read-Host "Press Enter to exit"
         exit 1
     }
 } catch {
-    Write-Host "Failed to install backend dependencies" -ForegroundColor Red
+    Write-Host "❌ Failed to install backend dependencies" -ForegroundColor Red
+    Write-Host "💡 Try running: python -m pip install --upgrade pip" -ForegroundColor Yellow
     Read-Host "Press Enter to exit"
     exit 1
 }
 
 # Install frontend dependencies
-Write-Host "Installing frontend dependencies..." -ForegroundColor Blue
+Write-Host "🎨 Installing frontend dependencies..." -ForegroundColor Blue
 Set-Location "..\frontend"
 try {
+    Write-Host "   Installing Node.js packages..." -ForegroundColor Gray
     npm install
     if ($LASTEXITCODE -eq 0) {
-        Write-Host "Frontend dependencies installed" -ForegroundColor Green
+        Write-Host "✅ Frontend dependencies installed successfully" -ForegroundColor Green
     } else {
-        Write-Host "Failed to install frontend dependencies" -ForegroundColor Red
+        Write-Host "❌ Failed to install frontend dependencies" -ForegroundColor Red
+        Write-Host "💡 Try running: npm cache clean --force" -ForegroundColor Yellow
         Read-Host "Press Enter to exit"
         exit 1
     }
 } catch {
-    Write-Host "Failed to install frontend dependencies" -ForegroundColor Red
+    Write-Host "❌ Failed to install frontend dependencies" -ForegroundColor Red
+    Write-Host "💡 Try running: npm cache clean --force" -ForegroundColor Yellow
     Read-Host "Press Enter to exit"
     exit 1
 }
 
+# Return to root directory
+Set-Location ".."
+
 Write-Host ""
-Write-Host "Starting PhishGuard services..." -ForegroundColor Yellow
+Write-Host "🚀 Starting PhishGuard services..." -ForegroundColor Yellow
 
 # Start backend in a new window
-Write-Host "Starting backend service..." -ForegroundColor Blue
+Write-Host "🔧 Starting backend service..." -ForegroundColor Blue
 Start-Process -FilePath "cmd" -ArgumentList "/k", "cd /d $PSScriptRoot\backend && python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000" -WindowStyle Normal
 
 # Wait a bit for backend to start
+Write-Host "   Waiting for backend to initialize..." -ForegroundColor Gray
 Start-Sleep -Seconds 5
 
 # Start frontend in a new window
-Write-Host "Starting frontend service..." -ForegroundColor Blue
+Write-Host "🎨 Starting frontend service..." -ForegroundColor Blue
 Start-Process -FilePath "cmd" -ArgumentList "/k", "cd /d $PSScriptRoot\frontend && npm run dev" -WindowStyle Normal
 
 # Wait a bit for frontend to start
+Write-Host "   Waiting for frontend to initialize..." -ForegroundColor Gray
 Start-Sleep -Seconds 8
 
 Write-Host ""
-Write-Host "Waiting for services to be ready..." -ForegroundColor Yellow
+Write-Host "⏳ Waiting for services to be ready..." -ForegroundColor Yellow
 
 # Wait for services to be ready
 $backendReady = $false
@@ -129,7 +160,7 @@ for ($i = 1; $i -le 30; $i++) {
             $response = Invoke-WebRequest -Uri "http://localhost:8000/docs" -TimeoutSec 2 -ErrorAction SilentlyContinue
             if ($response.StatusCode -eq 200) {
                 $backendReady = $true
-                Write-Host "Backend service is ready" -ForegroundColor Green
+                Write-Host "✅ Backend service is ready at http://localhost:8000" -ForegroundColor Green
             }
         } catch {
             # Service not ready yet
@@ -141,7 +172,7 @@ for ($i = 1; $i -le 30; $i++) {
             $response = Invoke-WebRequest -Uri "http://localhost:3000" -TimeoutSec 2 -ErrorAction SilentlyContinue
             if ($response.StatusCode -eq 200) {
                 $frontendReady = $true
-                Write-Host "Frontend service is ready" -ForegroundColor Green
+                Write-Host "✅ Frontend service is ready at http://localhost:3000" -ForegroundColor Green
             }
         } catch {
             # Service not ready yet
@@ -158,27 +189,33 @@ for ($i = 1; $i -le 30; $i++) {
 
 Write-Host ""
 Write-Host "===============================================================" -ForegroundColor Cyan
-Write-Host "PHISHGUARD STATUS" -ForegroundColor Yellow
+Write-Host "🎉 PHISHGUARD STATUS - READY!" -ForegroundColor Yellow
 Write-Host "===============================================================" -ForegroundColor Cyan
-Write-Host "Backend: RUNNING (http://localhost:8000)" -ForegroundColor Green
-Write-Host "Frontend: RUNNING (http://localhost:3000)" -ForegroundColor Green
+Write-Host "🔧 Backend: RUNNING (http://localhost:8000)" -ForegroundColor Green
+Write-Host "🎨 Frontend: RUNNING (http://localhost:3000)" -ForegroundColor Green
 Write-Host ""
-Write-Host "Your PhishGuard application is ready!" -ForegroundColor Yellow
-Write-Host "Access your application at: http://localhost:3000" -ForegroundColor Cyan
-Write-Host "API documentation at: http://localhost:8000/docs" -ForegroundColor Cyan
+Write-Host "🎯 Your PhishGuard application is ready!" -ForegroundColor Yellow
+Write-Host "🌐 Main Application: http://localhost:3000" -ForegroundColor Cyan
+Write-Host "📚 API Documentation: http://localhost:8000/docs" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "Close the command windows to stop the services" -ForegroundColor Gray
+Write-Host "💡 IMPORTANT: Close the command windows to stop the services" -ForegroundColor Gray
+Write-Host "🔄 To restart: Just run this script again!" -ForegroundColor Green
 Write-Host "===============================================================" -ForegroundColor Cyan
 
 # Open the application in browser
 Write-Host ""
-Write-Host "Opening PhishGuard application..." -ForegroundColor Yellow
+Write-Host "🌐 Opening PhishGuard application..." -ForegroundColor Yellow
 Start-Process "http://localhost:3000"
 Start-Process "http://localhost:8000/docs"
 
 Write-Host ""
-Write-Host "PhishGuard started successfully!" -ForegroundColor Green
-Write-Host "Services are running in separate command windows." -ForegroundColor Gray
-Write-Host "Close those windows to stop the services." -ForegroundColor Gray
+Write-Host "🎉 PhishGuard started successfully!" -ForegroundColor Green
+Write-Host "📱 Services are running in separate command windows." -ForegroundColor Gray
+Write-Host "❌ Close those windows to stop the services." -ForegroundColor Gray
+Write-Host ""
+Write-Host "💡 FOR YOUR TEAM:" -ForegroundColor Yellow
+Write-Host "   - Share this script with your teammates" -ForegroundColor White
+Write-Host "   - They just need Python + Node.js installed" -ForegroundColor White
+Write-Host "   - Run this script and everything works!" -ForegroundColor White
 Write-Host ""
 Read-Host "Press Enter to exit this launcher (services will continue running)"

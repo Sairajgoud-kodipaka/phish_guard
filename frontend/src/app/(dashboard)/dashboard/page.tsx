@@ -8,13 +8,12 @@ import {
   ExclamationTriangleIcon,
   EnvelopeIcon,
   ClockIcon,
-  ChartBarIcon,
 } from '@heroicons/react/24/outline'
 import { backendApi } from '@/lib/backend-api'
 import { DashboardStats } from '@/types'
 import { EmailAnalyzer } from '@/components/email/email-analyzer'
 import { EmailPreviewModal } from '@/components/email/email-preview-modal'
-import { generateDemoEmailData } from '@/lib/demo-data'
+
 
 interface AnalyzedEmail {
   id: number
@@ -121,7 +120,7 @@ export default function DashboardPage() {
       isPhishing: email.is_phishing,
       isSpam: email.is_spam,
       isMalware: email.is_malware,
-      actionTaken: email.action_taken,
+      actionTaken: email.action_taken || 'allow',
       processingTime: email.processing_time || 0,
       confidence: 85, // This would come from backend
       analysis: {
@@ -231,15 +230,7 @@ export default function DashboardPage() {
             <EnvelopeIcon className="h-6 w-6 mr-3" />
             Analyze Email
           </Button>
-          <Button 
-            size="lg"
-            variant="outline"
-            className="h-16 px-8 text-lg"
-            onClick={() => setSelectedEmailForPreview(generateDemoEmailData() as any)}
-          >
-            <ChartBarIcon className="h-6 w-6 mr-3" />
-            Demo Modal
-          </Button>
+
         </CardContent>
       </Card>
 
@@ -350,14 +341,7 @@ export default function DashboardPage() {
               <EnvelopeIcon className="h-12 w-12 mx-auto mb-4 text-gray-300" />
               <p>No emails analyzed yet.</p>
               <p className="text-sm">Upload an email above to see analysis results here!</p>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="mt-4"
-                onClick={() => setSelectedEmailForPreview(generateDemoEmailData() as any)}
-              >
-                View Demo Analysis
-              </Button>
+              
             </div>
           )}
         </CardContent>
