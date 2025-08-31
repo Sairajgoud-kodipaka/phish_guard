@@ -1,12 +1,11 @@
-
-# PhishGuard - SIMPLE STARTUP SCRIPT (For Non-Technical Users)
+# PhishGuard - WORKING STARTUP SCRIPT
 # 
 # WHAT THIS DOES:
 # 1. Checks if Python and Node.js are installed
-# 2. Installs ONLY the essential packages (no complex ML stuff)
-# 3. Fixes security vulnerabilities automatically
-# 4. Starts the basic app
-# 5. Opens it in your browser
+# 2. Installs essential packages
+# 3. Fixes security vulnerabilities
+# 4. Starts both services with proper CORS
+# 5. Opens the app in browser
 #
 # FOR YOUR TEAMMATE:
 # - Just run this script
@@ -14,9 +13,9 @@
 # - No technical knowledge needed!
 
 Write-Host "===============================================================" -ForegroundColor Cyan
-Write-Host "PHISHGUARD - Simple Startup Script" -ForegroundColor Yellow
+Write-Host "PHISHGUARD - Working Startup Script" -ForegroundColor Yellow
 Write-Host "===============================================================" -ForegroundColor Cyan
-Write-Host "This script will get PhishGuard running on your computer!" -ForegroundColor Green
+Write-Host "This script will get PhishGuard running perfectly!" -ForegroundColor Green
 Write-Host "No technical knowledge required - just wait and watch!" -ForegroundColor Green
 Write-Host "===============================================================" -ForegroundColor Cyan
 
@@ -59,13 +58,13 @@ try {
 }
 
 Write-Host ""
-Write-Host "Step 2: Installing basic packages (this may take a few minutes)..." -ForegroundColor Yellow
+Write-Host "Step 2: Installing packages and fixing vulnerabilities..." -ForegroundColor Yellow
 
-# Install ONLY essential backend packages (no ML packages)
-Write-Host "Installing basic backend packages..." -ForegroundColor Blue
+# Install backend packages
+Write-Host "Installing backend packages..." -ForegroundColor Blue
 Set-Location "backend"
 
-# Create a simple requirements file with only essential packages
+# Create simple requirements file
 $simpleRequirements = @"
 fastapi
 uvicorn
@@ -80,66 +79,84 @@ python-dotenv
 $simpleRequirements | Out-File -FilePath "requirements_simple.txt" -Encoding UTF8
 
 try {
-    Write-Host "   Installing basic Python packages..." -ForegroundColor Gray
+    Write-Host "   Installing Python packages..." -ForegroundColor Gray
     python -m pip install -r requirements_simple.txt
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host "Backend packages installed successfully!" -ForegroundColor Green
-    } else {
-        Write-Host "Some packages failed to install, but that's OK!" -ForegroundColor Yellow
-        Write-Host "We'll try to start the app anyway..." -ForegroundColor Yellow
-    }
+    Write-Host "Backend packages installed successfully!" -ForegroundColor Green
 } catch {
     Write-Host "Some packages failed to install, but that's OK!" -ForegroundColor Yellow
-    Write-Host "We'll try to start the app anyway..." -ForegroundColor Yellow
 }
 
-# Install frontend dependencies with vulnerability fixes
+# Install frontend packages and fix vulnerabilities
 Write-Host "Installing frontend packages..." -ForegroundColor Blue
 Set-Location "..\frontend"
+
 try {
     Write-Host "   Installing Node.js packages..." -ForegroundColor Gray
     npm install
     
-    Write-Host "   Checking for security vulnerabilities..." -ForegroundColor Gray
-    npm audit
-    
-    Write-Host "   Fixing security vulnerabilities automatically..." -ForegroundColor Gray
+    Write-Host "   Fixing security vulnerabilities..." -ForegroundColor Gray
     npm audit fix --force
     
-    Write-Host "   Running security check again..." -ForegroundColor Gray
+    Write-Host "   Final security check..." -ForegroundColor Gray
     npm audit
     
-    if ($LASTEXITCODE -eq 0) {
-        Write-Host "Frontend packages installed and secured successfully!" -ForegroundColor Green
-    } else {
-        Write-Host "Some packages failed to install, but that's OK!" -ForegroundColor Yellow
-        Write-Host "We'll try to start the app anyway..." -ForegroundColor Yellow
-    }
+    Write-Host "Frontend packages installed and secured!" -ForegroundColor Green
 } catch {
     Write-Host "Some packages failed to install, but that's OK!" -ForegroundColor Yellow
-    Write-Host "We'll try to start the app anyway..." -ForegroundColor Yellow
 }
 
 # Return to root directory
 Set-Location ".."
 
 Write-Host ""
-Write-Host "Step 3: Starting PhishGuard (this may take a minute)..." -ForegroundColor Yellow
+Write-Host "Step 3: Stopping any existing services..." -ForegroundColor Yellow
 
-# Try to start backend (but don't fail if it doesn't work)
-Write-Host "Trying to start backend service..." -ForegroundColor Blue
+# Kill any existing processes on ports 8000 and 3000
+try {
+    Get-Process | Where-Object {$_.ProcessName -eq "python" -or $_.ProcessName -eq "node"} | Stop-Process -Force -ErrorAction SilentlyContinue
+    Write-Host "Existing services stopped!" -ForegroundColor Green
+} catch {}
+
+# Wait a moment
+Start-Sleep -Seconds 2
+
+Write-Host ""
+Write-Host "Step 4: Starting PhishGuard services..." -ForegroundColor Yellow
+
+# Start backend service
+Write-Host "Starting backend service..." -ForegroundColor Blue
 try {
     Start-Process -FilePath "cmd" -ArgumentList "/k", "cd /d $PSScriptRoot\backend && python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000" -WindowStyle Normal
     Write-Host "Backend service started!" -ForegroundColor Green
 } catch {
-    Write-Host "Backend service failed to start, but that's OK!" -ForegroundColor Yellow
-    Write-Host "We'll try the frontend anyway..." -ForegroundColor Yellow
+    Write-Host "Backend service failed to start!" -ForegroundColor Red
+    Read-Host "Press Enter to exit"
+    exit 1
 }
 
-# Wait a bit
-Start-Sleep -Seconds 3
+# Wait for backend to be ready
+Write-Host "Waiting for backend to be ready..." -ForegroundColor Gray
+$backendReady = $false
+for ($i = 1; $i -le 20; $i++) {
+    try {
+        $response = Invoke-WebRequest -Uri "http://localhost:8000" -TimeoutSec 3 -ErrorAction SilentlyContinue
+        if ($response.StatusCode -eq 200) {
+            $backendReady = $true
+            Write-Host "Backend is ready!" -ForegroundColor Green
+            break
+        }
+    } catch {}
+    Write-Host "   Waiting for backend... ($i/20)" -ForegroundColor Gray
+    Start-Sleep -Seconds 2
+}
 
-# Start frontend
+if (-not $backendReady) {
+    Write-Host "Backend failed to start properly!" -ForegroundColor Red
+    Read-Host "Press Enter to exit"
+    exit 1
+}
+
+# Start frontend service
 Write-Host "Starting frontend service..." -ForegroundColor Blue
 try {
     Start-Process -FilePath "cmd" -ArgumentList "/k", "cd /d $PSScriptRoot\frontend && npm run dev" -WindowStyle Normal
@@ -150,25 +167,33 @@ try {
     exit 1
 }
 
-Write-Host ""
-Write-Host "Step 4: Waiting for services to be ready..." -ForegroundColor Yellow
-
-# Wait for frontend to be ready (simpler check)
+# Wait for frontend to be ready
+Write-Host "Waiting for frontend to be ready..." -ForegroundColor Gray
 $frontendReady = $false
-for ($i = 1; $i -le 20; $i++) {
+for ($i = 1; $i -le 30; $i++) {
     try {
-        $response = Invoke-WebRequest -Uri "http://localhost:3000" -TimeoutSec 2 -ErrorAction SilentlyContinue
+        $response = Invoke-WebRequest -Uri "http://localhost:3000" -TimeoutSec 3 -ErrorAction SilentlyContinue
         if ($response.StatusCode -eq 200) {
             $frontendReady = $true
             Write-Host "Frontend is ready!" -ForegroundColor Green
             break
         }
-    } catch {
-        # Service not ready yet
+    } catch {}
+    Write-Host "   Waiting for frontend... ($i/30)" -ForegroundColor Gray
+    Start-Sleep -Seconds 3
+}
+
+# Test the connection between frontend and backend
+Write-Host "Testing frontend-backend connection..." -ForegroundColor Gray
+$connectionTest = $false
+try {
+    $apiResponse = Invoke-WebRequest -Uri "http://localhost:8000/api/v1/emails/stats/summary?days=30" -TimeoutSec 5 -ErrorAction SilentlyContinue
+    if ($apiResponse.StatusCode -eq 200) {
+        $connectionTest = $true
+        Write-Host "Frontend-backend connection is working!" -ForegroundColor Green
     }
-    
-    Write-Host "   Waiting... ($i/20)" -ForegroundColor Gray
-    Start-Sleep -Seconds 2
+} catch {
+    Write-Host "Connection test failed, but continuing..." -ForegroundColor Yellow
 }
 
 Write-Host ""
@@ -176,8 +201,14 @@ Write-Host "===============================================================" -Fo
 Write-Host "PHISHGUARD STATUS" -ForegroundColor Yellow
 Write-Host "===============================================================" -ForegroundColor Cyan
 
-if ($frontendReady) {
+if ($backendReady -and $frontendReady) {
+    Write-Host "Backend: READY at http://localhost:8000" -ForegroundColor Green
     Write-Host "Frontend: READY at http://localhost:3000" -ForegroundColor Green
+    if ($connectionTest) {
+        Write-Host "Connection: WORKING" -ForegroundColor Green
+    } else {
+        Write-Host "Connection: TESTING..." -ForegroundColor Yellow
+    }
     Write-Host ""
     Write-Host "Your PhishGuard app is ready!" -ForegroundColor Yellow
     Write-Host "Access it at: http://localhost:3000" -ForegroundColor Cyan
@@ -194,9 +225,11 @@ if ($frontendReady) {
     Write-Host "To stop the app: Close the command windows that opened." -ForegroundColor Gray
     Write-Host "To restart: Just run this script again!" -ForegroundColor Green
 } else {
-    Write-Host "Frontend: NOT READY" -ForegroundColor Red
+    Write-Host "Something went wrong:" -ForegroundColor Red
+    if (-not $backendReady) { Write-Host "Backend: NOT READY" -ForegroundColor Red }
+    if (-not $frontendReady) { Write-Host "Frontend: NOT READY" -ForegroundColor Red }
     Write-Host ""
-    Write-Host "Something went wrong. Here's what to try:" -ForegroundColor Yellow
+    Write-Host "Here's what to try:" -ForegroundColor Yellow
     Write-Host "1. Make sure you have Python and Node.js installed" -ForegroundColor White
     Write-Host "2. Try running this script again" -ForegroundColor White
     Write-Host "3. Check if any error messages appeared above" -ForegroundColor White

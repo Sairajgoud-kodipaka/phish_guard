@@ -104,6 +104,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Handle OPTIONS requests for CORS preflight
+@app.options("/{full_path:path}")
+async def options_handler(full_path: str):
+    """Handle CORS preflight requests"""
+    return {"message": "OK"}
+
 # Trusted Host Middleware
 if settings.ALLOWED_HOSTS:
     app.add_middleware(

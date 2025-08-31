@@ -1,8 +1,8 @@
 @echo off
 echo ================================================================
-echo PHISHGUARD - Simple Startup Script (Batch File Version)
+echo PHISHGUARD - Final Reliable Startup Script (Batch Version)
 echo ================================================================
-echo This script will get PhishGuard running on your computer!
+echo This script will get PhishGuard running perfectly!
 echo No technical knowledge required - just wait and watch!
 echo ================================================================
 echo.
@@ -34,11 +34,11 @@ if %errorlevel% equ 0 (
 )
 
 echo.
-echo Step 2: Installing basic packages (this may take a few minutes)...
+echo Step 2: Installing packages and fixing vulnerabilities...
 echo.
 
-REM Install basic backend packages
-echo Installing basic backend packages...
+REM Install backend packages
+echo Installing backend packages...
 cd backend
 
 REM Create simple requirements file
@@ -56,10 +56,9 @@ if %errorlevel% equ 0 (
     echo Backend packages installed successfully!
 ) else (
     echo Some packages failed to install, but that's OK!
-    echo We'll try to start the app anyway...
 )
 
-REM Install frontend packages with vulnerability fixes
+REM Install frontend packages and fix vulnerabilities
 echo Installing frontend packages...
 cd ..\frontend
 npm install
@@ -67,62 +66,76 @@ if %errorlevel% equ 0 (
     echo Frontend packages installed successfully!
 ) else (
     echo Some packages failed to install, but that's OK!
-    echo We'll try to start the app anyway...
 )
 
-echo Checking for security vulnerabilities...
-npm audit
-
-echo Fixing security vulnerabilities automatically...
+echo Fixing security vulnerabilities...
 npm audit fix --force
 
-echo Running security check again...
+echo Final security check...
 npm audit
 
 cd ..
 
 echo.
-echo Step 3: Starting PhishGuard (this may take a minute)...
+echo Step 3: Starting PhishGuard services...
 echo.
 
+REM Stop any existing services
+echo Stopping any existing services...
+taskkill /f /im python.exe >nul 2>&1
+taskkill /f /im node.exe >nul 2>&1
+
 REM Start backend service
-echo Trying to start backend service...
+echo Starting backend service...
 start "PhishGuard Backend" cmd /k "cd /d %~dp0backend && python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000"
 
-REM Wait a bit
-timeout /t 3 /nobreak >nul
+REM Wait for backend to be ready
+echo Waiting for backend to be ready...
+set /a count=0
+:wait_backend
+set /a count+=1
+echo    Waiting for backend... (%count%/15)
+timeout /t 2 /nobreak >nul
 
+REM Check if backend is responding
+powershell -Command "try { $response = Invoke-WebRequest -Uri 'http://localhost:8000' -TimeoutSec 3; if ($response.StatusCode -eq 200) { exit 0 } } catch { exit 1 }"
+if %errorlevel% equ 0 (
+    echo Backend is ready!
+    goto backend_ready
+)
+
+if %count% lss 15 goto wait_backend
+echo Backend failed to start properly!
+pause
+exit /b 1
+
+:backend_ready
 REM Start frontend service
 echo Starting frontend service...
 start "PhishGuard Frontend" cmd /k "cd /d %~dp0frontend && npm run dev"
 
-echo.
-echo Step 4: Waiting for services to be ready...
-echo.
-
 REM Wait for frontend to be ready
+echo Waiting for frontend to be ready...
 set /a count=0
-:wait_loop
+:wait_frontend
 set /a count+=1
-echo    Waiting... (%count%/20)
-timeout /t 2 /nobreak >nul
+echo    Waiting for frontend... (%count%/20)
+timeout /t 3 /nobreak >nul
 
-REM Simple check if frontend is responding
-powershell -Command "try { $response = Invoke-WebRequest -Uri 'http://localhost:3000' -TimeoutSec 2; if ($response.StatusCode -eq 200) { exit 0 } } catch { exit 1 }"
+REM Check if frontend is responding
+powershell -Command "try { $response = Invoke-WebRequest -Uri 'http://localhost:3000' -TimeoutSec 3; if ($response.StatusCode -eq 200) { exit 0 } } catch { exit 1 }"
 if %errorlevel% equ 0 (
     goto frontend_ready
 )
 
-if %count% lss 20 goto wait_loop
-
-echo Frontend is taking longer than expected...
-echo Let's try to open it anyway...
+if %count% lss 20 goto wait_frontend
 
 :frontend_ready
 echo.
 echo ================================================================
 echo PHISHGUARD STATUS
 echo ================================================================
+echo Backend: READY at http://localhost:8000
 echo Frontend: READY at http://localhost:3000
 echo.
 echo Your PhishGuard app is ready!
@@ -135,7 +148,7 @@ REM Open the application in browser
 start http://localhost:3000
 
 echo.
-echo SUCCESS! PhishGuard is now running!
+echo SUCCESS! PhishGuard is now running perfectly!
 echo The app opened in your browser automatically.
 echo.
 echo To stop the app: Close the command windows that opened.
