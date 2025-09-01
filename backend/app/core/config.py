@@ -100,7 +100,7 @@ class Settings(BaseSettings):
     # Testing
     TESTING: bool = False
     TEST_USER_EMAIL: str = "admin@phishguard.com"
-    TEST_USER_PASSWORD: str = "demo123"
+    TEST_USER_PASSWORD: str = ""
     
     @field_validator("ENVIRONMENT")
     @classmethod

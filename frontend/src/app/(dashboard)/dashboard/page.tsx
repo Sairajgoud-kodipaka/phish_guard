@@ -47,11 +47,21 @@ export default function DashboardPage() {
     setError(null)
 
     try {
-      // Fetch real data from backend
+      console.log('🔄 Loading dashboard data...')
+      
+      // Fetch real data from backend with retry logic
       const [emailStats, recentEmailsData] = await Promise.all([
-        backendApi.getEmailStats(30),
-        backendApi.getRecentEmails(10, 30)
+        backendApi.getEmailStats(30).catch(err => {
+          console.error('❌ Failed to get email stats:', err)
+          throw err
+        }),
+        backendApi.getRecentEmails(10, 30).catch(err => {
+          console.error('❌ Failed to get recent emails:', err)
+          throw err
+        })
       ])
+      
+      console.log('✅ Dashboard data loaded:', { emailStats, recentEmailsData })
 
       // Convert email stats to dashboard stats format
       const statsData = emailStats as any
@@ -82,7 +92,7 @@ export default function DashboardPage() {
     } catch (err) {
       console.error('Failed to load dashboard data:', err)
       setError('Failed to connect to backend. Please ensure the backend server is running.')
-      // Set demo data as fallback
+      // Set empty data on error
       setDashboardStats({
         total_emails: 0,
         emails_processed: 0,
@@ -130,41 +140,34 @@ export default function DashboardPage() {
         anomalyScore: Math.round(email.threat_score * 90),
         overallScore: Math.round(email.threat_score * 100),
         patterns: {
-          suspiciousKeywords: email.is_phishing ? ['urgent', 'verify', 'account', 'suspended'] : [],
+          suspiciousKeywords: [],
           urls: [],
           attachments: [],
           senderAnalysis: {
-            reputation: 75,
-            domainAge: 365,
-            spfRecord: true,
-            dkimRecord: true,
-            dmarcRecord: true,
+            reputation: 0,
+            domainAge: 0,
+            spfRecord: false,
+            dkimRecord: false,
+            dmarcRecord: false,
             suspiciousIndicators: []
           },
           contentAnalysis: {
-            sentiment: (email.is_phishing ? 'negative' : 'neutral') as 'negative' | 'positive' | 'neutral',
-            urgency: (email.is_phishing ? 'high' : 'low') as 'low' | 'medium' | 'high',
-            impersonation: email.is_phishing,
-            socialEngineering: email.is_phishing,
-            financialPressure: email.is_phishing,
-            authorityPressure: email.is_phishing
+            sentiment: 'neutral' as 'negative' | 'positive' | 'neutral',
+            urgency: 'low' as 'low' | 'medium' | 'high',
+            impersonation: false,
+            socialEngineering: false,
+            financialPressure: false,
+            authorityPressure: false
           }
         },
         mlModel: {
-          name: 'PhishGuard ML v2.1',
-          version: '2.1.0',
-          accuracy: 98.5,
-          lastUpdated: '2024-12-31',
-          features: ['NLP Analysis', 'URL Scanning', 'Header Analysis', 'Anomaly Detection']
+          name: 'PhishGuard ML',
+          version: '1.0.0',
+          accuracy: 0,
+          lastUpdated: '',
+          features: []
         },
-                 threats: email.is_phishing ? [{
-           type: 'Phishing',
-           score: Math.round(email.threat_score * 100),
-           description: 'Suspicious email content indicating potential phishing attempt',
-           indicators: ['Urgent language', 'Account verification request', 'Suspicious sender'],
-           severity: (email.threat_score > 0.8 ? 'high' : email.threat_score > 0.6 ? 'medium' : 'low') as 'high' | 'medium' | 'low',
-           confidence: 85
-         }] : []
+        threats: []
       }
     }
   }
@@ -207,9 +210,30 @@ export default function DashboardPage() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 p-6">
+      {/* Header with Refresh Button */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Email Security Analysis</h1>
+          <p className="text-gray-600 mt-2">AI-powered email threat detection and analysis</p>
+        </div>
+        <Button
+          onClick={loadDashboardData}
+          disabled={loading}
+          variant="outline"
+          className="flex items-center space-x-2"
+        >
+          <ClockIcon className="h-4 w-4" />
+          <span>{loading ? 'Refreshing...' : 'Refresh Data'}</span>
+        </Button>
+      </div>
+
       {error && (
-        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800 text-center">
-          {error}
+        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800 text-center">
+          <div className="font-semibold">Connection Error:</div>
+          <div>{error}</div>
+          <div className="mt-2 text-xs">
+            Backend is running but frontend can't connect. Try refreshing the page.
+          </div>
         </div>
       )}
 
@@ -352,6 +376,7 @@ export default function DashboardPage() {
         <EmailAnalyzer 
           onClose={() => setShowEmailAnalyzer(false)}
           onEmailAnalyzed={handleEmailAnalyzed}
+          onRefreshDashboard={loadDashboardData}
         />
       )}
 

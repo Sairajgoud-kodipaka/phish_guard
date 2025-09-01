@@ -185,10 +185,7 @@ def verify_api_key(api_key: str) -> bool:
     In production, this would check against a database
     """
     # This is a placeholder - in production you'd check against a database
-    valid_api_keys = [
-        "demo-api-key-12345",
-        "test-api-key-67890"
-    ]
+    valid_api_keys = []
     return api_key in valid_api_keys
 
 

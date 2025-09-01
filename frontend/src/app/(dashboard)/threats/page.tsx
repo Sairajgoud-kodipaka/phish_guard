@@ -32,73 +32,7 @@ interface ThreatData {
   actionTaken: string
 }
 
-const mockThreats: ThreatData[] = [
-  {
-    id: 1,
-    email: 'urgent-payment@fake-bank.com',
-    sender: 'security@fake-bank.com',
-    subject: 'URGENT: Verify Your Account Immediately',
-    threatType: 'Phishing',
-    riskLevel: 89,
-    status: 'blocked',
-    detectedAt: new Date(Date.now() - 5 * 60 * 1000),
-    indicators: ['Suspicious sender', 'Malicious URLs', 'Social engineering'],
-    description: 'Phishing email attempting to steal banking credentials',
-    actionTaken: 'Email blocked and sender blacklisted',
-  },
-  {
-    id: 2,
-    email: 'invoice-update@suspicious-domain.net',
-    sender: 'billing@suspicious-domain.net',
-    subject: 'Invoice Update Required - Action Needed',
-    threatType: 'Social Engineering',
-    riskLevel: 76,
-    status: 'quarantined',
-    detectedAt: new Date(Date.now() - 15 * 60 * 1000),
-    indicators: ['Unknown sender', 'Suspicious attachment', 'Urgency tactics'],
-    description: 'Social engineering attempt with fake invoice',
-    actionTaken: 'Email quarantined for review',
-  },
-  {
-    id: 3,
-    email: 'security-alert@malware-site.org',
-    sender: 'alerts@malware-site.org',
-    subject: 'Security Alert: Suspicious Activity Detected',
-    threatType: 'Malware',
-    riskLevel: 94,
-    status: 'blocked',
-    detectedAt: new Date(Date.now() - 60 * 60 * 1000),
-    indicators: ['Known malware domain', 'Suspicious attachment', 'Command & Control'],
-    description: 'Email containing malware payload',
-    actionTaken: 'Email blocked and attachment quarantined',
-  },
-  {
-    id: 4,
-    email: 'document-shared@credential-harvest.com',
-    sender: 'noreply@credential-harvest.com',
-    subject: 'Shared Document: Q4 Financial Report.pdf',
-    threatType: 'Credential Harvesting',
-    riskLevel: 82,
-    status: 'investigating',
-    detectedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
-    indicators: ['Credential harvesting patterns', 'Fake document sharing', 'Suspicious links'],
-    description: 'Attempt to harvest credentials via fake document sharing',
-    actionTaken: 'Under investigation by security team',
-  },
-  {
-    id: 5,
-    email: 'prize-notification@lottery-scam.biz',
-    sender: 'winner@lottery-scam.biz',
-    subject: 'Congratulations! You\'ve Won $1,000,000',
-    threatType: 'Scam',
-    riskLevel: 71,
-    status: 'blocked',
-    detectedAt: new Date(Date.now() - 3 * 60 * 60 * 1000),
-    indicators: ['Known scam patterns', 'Financial fraud', 'Emotional manipulation'],
-    description: 'Classic lottery scam attempting financial fraud',
-    actionTaken: 'Email blocked and domain reported',
-  },
-]
+const threats: ThreatData[] = []
 
 const statusColors = {
   blocked: 'destructive',
@@ -119,7 +53,7 @@ export default function ThreatsPage() {
   const [filterStatus, setFilterStatus] = useState('all')
   const [filterThreatType, setFilterThreatType] = useState('all')
 
-  const filteredThreats = mockThreats.filter((threat) => {
+  const filteredThreats = threats.filter((threat) => {
     const matchesStatus = filterStatus === 'all' || threat.status === filterStatus
     const matchesThreatType = filterThreatType === 'all' || threat.threatType === filterThreatType
     return matchesStatus && matchesThreatType

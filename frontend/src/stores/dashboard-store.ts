@@ -174,37 +174,12 @@ export const useDashboardStore = create<DashboardState>()(
       const { addThreat, addActivity } = get()
       
       const interval = setInterval(() => {
-        const mockThreats = [
-          {
-            email: 'suspicious@example.com',
-            threat: 'Phishing',
-            level: Math.floor(Math.random() * 40) + 60,
-            status: 'blocked' as const,
-          },
-          {
-            email: 'malware@fake-site.org',
-            threat: 'Malware',
-            level: Math.floor(Math.random() * 30) + 70,
-            status: 'quarantined' as const,
-          },
-        ]
-
-        const mockActivities = [
-          {
-            action: 'Email Processed',
-            details: 'New email analyzed and classified',
-            type: 'success' as const,
-          },
-          {
-            action: 'System Update',
-            details: 'Threat database updated with new patterns',
-            type: 'info' as const,
-          },
-        ]
+        const threats: any[] = []
+        const activities: any[] = []
 
         // Add random threat (30% chance)
-        if (Math.random() < 0.3) {
-          const threat = mockThreats[Math.floor(Math.random() * mockThreats.length)]
+        if (Math.random() < 0.3 && threats.length > 0) {
+          const threat = threats[Math.floor(Math.random() * threats.length)]
           addThreat({
             id: Date.now(),
             ...threat,
@@ -215,8 +190,8 @@ export const useDashboardStore = create<DashboardState>()(
         }
 
         // Add random activity (70% chance)
-        if (Math.random() < 0.7) {
-          const activity = mockActivities[Math.floor(Math.random() * mockActivities.length)]
+        if (Math.random() < 0.7 && activities.length > 0) {
+          const activity = activities[Math.floor(Math.random() * activities.length)]
           addActivity({
             id: Date.now(),
             ...activity,

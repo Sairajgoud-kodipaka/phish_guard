@@ -11,8 +11,10 @@ import {
   ExclamationTriangleIcon,
   ShieldCheckIcon,
   ClockIcon,
+  InformationCircleIcon,
 } from '@heroicons/react/24/outline'
 import { backendApi } from '@/lib/backend-api'
+import { toast } from 'react-hot-toast'
 
 interface EmailAnalysisResult {
   email_id: number
@@ -31,9 +33,10 @@ interface EmailAnalysisResult {
 interface EmailAnalyzerProps {
   onClose: () => void
   onEmailAnalyzed?: () => void
+  onRefreshDashboard?: () => void  // NEW: Add dashboard refresh callback
 }
 
-export function EmailAnalyzer({ onClose, onEmailAnalyzed }: EmailAnalyzerProps) {
+export function EmailAnalyzer({ onClose, onEmailAnalyzed, onRefreshDashboard }: EmailAnalyzerProps) {
   const [file, setFile] = useState<File | null>(null)
   const [emailText, setEmailText] = useState('')
   const [analyzing, setAnalyzing] = useState(false)
@@ -47,13 +50,37 @@ export function EmailAnalyzer({ onClose, onEmailAnalyzed }: EmailAnalyzerProps) 
     date: string
     body: string
   } | null>(null)
+  const [debugInfo, setDebugInfo] = useState<string>('')
+  const [uploadProgress, setUploadProgress] = useState<string>('')
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0]
     if (selectedFile) {
+      console.log('File selected:', selectedFile.name, 'Size:', selectedFile.size, 'Type:', selectedFile.type)
       setFile(selectedFile)
       setEmailText('')
       setError(null)
+      setDebugInfo(`File selected: ${selectedFile.name} (${selectedFile.size} bytes)`)
+      
+      // Validate file
+      if (selectedFile.size > 10 * 1024 * 1024) { // 10MB limit
+        setError('File too large. Please select a file smaller than 10MB.')
+        setFile(null)
+        toast.error('File too large. Please select a file smaller than 10MB.')
+        return
+      }
+      
+      // Check file type
+      const allowedTypes = ['.txt', '.eml', '.msg']
+      const fileExtension = selectedFile.name.toLowerCase().substring(selectedFile.name.lastIndexOf('.'))
+      if (!allowedTypes.includes(fileExtension)) {
+        setError('Invalid file type. Please select a .txt, .eml, or .msg file.')
+        setFile(null)
+        toast.error('Invalid file type. Please select a .txt, .eml, or .msg file.')
+        return
+      }
+      
+      toast.success(`File selected: ${selectedFile.name}`)
     }
   }
 
@@ -64,6 +91,10 @@ export function EmailAnalyzer({ onClose, onEmailAnalyzed }: EmailAnalyzerProps) 
     }
 
     setError(null)
+    setDebugInfo('')
+    setUploadProgress('')
+    
+    console.log('Starting analysis...', { file: file?.name, hasText: !!emailText.trim() })
     
     // Parse email content for preview
     let contentToAnalyze = emailText
@@ -72,7 +103,14 @@ export function EmailAnalyzer({ onClose, onEmailAnalyzed }: EmailAnalyzerProps) 
       const reader = new FileReader()
       reader.onload = (e) => {
         contentToAnalyze = e.target?.result as string
+        console.log('File content read, length:', contentToAnalyze.length)
+        setDebugInfo(`File content loaded: ${contentToAnalyze.length} characters`)
         showEmailPreview(contentToAnalyze)
+      }
+      reader.onerror = (e) => {
+        console.error('File read error:', e)
+        setError('Failed to read file content')
+        toast.error('Failed to read file content')
       }
       reader.readAsText(file)
     } else {
@@ -81,6 +119,8 @@ export function EmailAnalyzer({ onClose, onEmailAnalyzed }: EmailAnalyzerProps) 
   }
 
   const showEmailPreview = (content: string) => {
+    console.log('Showing email preview, content length:', content.length)
+    
     // Parse email headers and content
     const lines = content.split('\n')
     const preview = {
@@ -113,6 +153,7 @@ export function EmailAnalyzer({ onClose, onEmailAnalyzed }: EmailAnalyzerProps) 
     const fullBody = bodyLines.join('\n').trim()
     preview.body = fullBody.length > 300 ? fullBody.substring(0, 300) + '...' : fullBody
 
+    console.log('Email preview parsed:', preview)
     setEmailPreview(preview)
     setShowPreview(true)
   }
@@ -121,26 +162,64 @@ export function EmailAnalyzer({ onClose, onEmailAnalyzed }: EmailAnalyzerProps) 
     setShowPreview(false)
     setAnalyzing(true)
     setResult(null)
+    setError(null)
+    setDebugInfo('')
+    setUploadProgress('')
 
     try {
+      console.log('Starting email analysis...')
+      setUploadProgress('Analyzing email content...')
+      
       let analysisResult: EmailAnalysisResult
 
       if (file) {
+        console.log('Analyzing uploaded file:', file.name)
+        setUploadProgress('Uploading file to backend...')
+        
         // Analyze uploaded file
         analysisResult = await backendApi.analyzeEmailFile(file) as EmailAnalysisResult
+        console.log('File analysis result:', analysisResult)
       } else {
+        console.log('Analyzing pasted email text, length:', emailText.length)
+        setUploadProgress('Analyzing email text...')
+        
         // Analyze pasted email text directly
         analysisResult = await backendApi.analyzeEmail(emailText) as EmailAnalysisResult
+        console.log('Text analysis result:', analysisResult)
       }
 
       setResult(analysisResult)
+      setUploadProgress('Analysis complete!')
+      setDebugInfo(`Analysis completed successfully. Threat score: ${Math.round(analysisResult.threat_score * 100)}%`)
+      
+      // Show success toast
+      toast.success(`Email analyzed successfully! Threat score: ${Math.round(analysisResult.threat_score * 100)}%`)
+      
+      // CRITICAL FIX: Refresh dashboard data after successful analysis
+      if (onRefreshDashboard) {
+        console.log('Refreshing dashboard data...')
+        onRefreshDashboard()
+      }
+      
       // Notify parent component that email was analyzed
       if (onEmailAnalyzed) {
         onEmailAnalyzed()
       }
     } catch (err) {
       console.error('Email analysis failed:', err)
-      setError('Failed to analyze email. Please try again.')
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred'
+      setError(`Failed to analyze email: ${errorMessage}`)
+      setDebugInfo(`Error details: ${errorMessage}`)
+      
+      // Show error toast
+      toast.error('Failed to analyze email. Please try again.')
+      
+      // Log detailed error information
+      if (err instanceof TypeError) {
+        console.error('TypeError details:', err.stack)
+      } else if (err instanceof Error) {
+        console.error('Error details:', err.stack)
+      }
     } finally {
       setAnalyzing(false)
     }
@@ -193,6 +272,27 @@ export function EmailAnalyzer({ onClose, onEmailAnalyzed }: EmailAnalyzerProps) 
           <CardContent className="p-6">
             {!result ? (
               <div className="space-y-6">
+                {/* Debug Information */}
+                {debugInfo && (
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
+                    <div className="flex items-center">
+                      <InformationCircleIcon className="h-4 w-4 mr-2" />
+                      <span className="font-medium">Debug Info:</span>
+                    </div>
+                    <div className="mt-1">{debugInfo}</div>
+                  </div>
+                )}
+
+                {/* Upload Progress */}
+                {uploadProgress && (
+                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800">
+                    <div className="flex items-center">
+                      <ClockIcon className="h-4 w-4 mr-2" />
+                      <span>{uploadProgress}</span>
+                    </div>
+                  </div>
+                )}
+
                 {/* File Upload */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -212,14 +312,14 @@ export function EmailAnalyzer({ onClose, onEmailAnalyzed }: EmailAnalyzerProps) 
                         Click to upload or drag and drop
                       </p>
                       <p className="text-xs text-gray-600">
-                        Supports .eml, .msg, and .txt files
+                        Supports .eml, .msg, and .txt files (max 10MB)
                       </p>
                     </label>
                   </div>
                   {file && (
-                    <p className="mt-2 text-sm text-gray-800 font-medium bg-green-50 border border-green-200 rounded px-3 py-2">
-                      ✓ Selected: {file.name}
-                    </p>
+                    <div className="mt-2 text-sm text-gray-800 font-medium bg-green-50 border border-green-200 rounded px-3 py-2">
+                      ✓ Selected: {file.name} ({(file.size / 1024).toFixed(1)} KB)
+                    </div>
                   )}
                 </div>
 
@@ -275,7 +375,11 @@ Your account will be suspended unless you verify...
 
                 {error && (
                   <div className="p-3 bg-red-100 border border-red-300 rounded text-sm text-red-700">
-                    {error}
+                    <div className="flex items-center">
+                      <ExclamationTriangleIcon className="h-4 w-4 mr-2" />
+                      <span className="font-medium">Error:</span>
+                    </div>
+                    <div className="mt-1">{error}</div>
                   </div>
                 )}
 
@@ -537,6 +641,8 @@ Your account will be suspended unless you verify...
                       setFile(null)
                       setEmailText('')
                       setError(null)
+                      setDebugInfo('')
+                      setUploadProgress('')
                     }}
                     variant="outline"
                   >
@@ -613,4 +719,4 @@ Your account will be suspended unless you verify...
       )}
     </div>
   )
-} 
+}

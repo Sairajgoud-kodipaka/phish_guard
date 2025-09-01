@@ -81,16 +81,16 @@ class ThreatAnalyzer:
         self._initialize_models()
     
     def _initialize_models(self):
-        """Initialize ML models - using simple models for demo"""
+        """Initialize ML models"""
         try:
             self.logger.info("Initializing threat detection models")
             
-            # Try to load pre-trained models (fallback to new models)
+            # Try to load pre-trained models
             try:
                 self._load_models()
             except:
-                self.logger.info("Pre-trained models not found, initializing new models")
-                self._create_demo_models()
+                self.logger.info("Pre-trained models not found, initializing fallback models")
+                self._create_fallback_models()
             
             # Initialize spaCy for NLP
             try:
@@ -109,60 +109,6 @@ class ThreatAnalyzer:
         except Exception as e:
             self.logger.error("Failed to initialize models", error=str(e))
             self._create_fallback_models()
-    
-    def _create_demo_models(self):
-        """Create demo models with sample training data"""
-        # Sample training data for demonstration
-        phishing_samples = [
-            "Urgent: Your account will be suspended. Click here to verify immediately.",
-            "Security Alert: Unauthorized access detected. Confirm your identity now.",
-            "Your payment method failed. Update your billing information.",
-            "Congratulations! You've won $1,000,000 in the lottery.",
-            "Your package is held in customs. Pay fee to release.",
-        ]
-        
-        legitimate_samples = [
-            "Thank you for your purchase. Your order will ship soon.",
-            "Your meeting has been scheduled for tomorrow at 10 AM.",
-            "Here is the document you requested for review.",
-            "Monthly newsletter with company updates and news.",
-            "Your subscription renewal is due next month.",
-        ]
-        
-        spam_samples = [
-            "Amazing weight loss pills! Lose 30 pounds in 30 days!",
-            "Work from home and make $5000 per week guaranteed!",
-            "Free casino bonus! Claim your $500 bonus now!",
-            "Cheap prescription drugs. No prescription needed.",
-            "Debt consolidation loans at low interest rates.",
-        ]
-        
-        # Combine training data
-        X_phishing = phishing_samples + legitimate_samples
-        y_phishing = [1] * len(phishing_samples) + [0] * len(legitimate_samples)
-        
-        X_spam = spam_samples + legitimate_samples
-        y_spam = [1] * len(spam_samples) + [0] * len(legitimate_samples)
-        
-        # Create and train vectorizer
-        self.vectorizer = TfidfVectorizer(
-            max_features=1000,
-            stop_words='english',
-            lowercase=True,
-            ngram_range=(1, 2)
-        )
-        
-        # Train phishing model
-        X_phishing_vec = self.vectorizer.fit_transform(X_phishing)
-        self.phishing_model = RandomForestClassifier(n_estimators=100, random_state=42)
-        self.phishing_model.fit(X_phishing_vec, y_phishing)
-        
-        # Train spam model
-        X_spam_vec = self.vectorizer.transform(X_spam)
-        self.spam_model = LogisticRegression(random_state=42)
-        self.spam_model.fit(X_spam_vec, y_spam)
-        
-        self.logger.info("Demo models created and trained successfully")
     
     def _create_fallback_models(self):
         """Create minimal fallback models if everything else fails"""

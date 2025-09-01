@@ -15,52 +15,45 @@ export function useWebSocket(url?: string) {
   useEffect(() => {
     const wsUrl = url || `${process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000'}/ws`
     
-    // For demo purposes, simulate WebSocket connection
-    // In production, you would connect to your actual WebSocket server
-    const simulateConnection = () => {
-      setIsConnected(true)
-      
-      // Simulate receiving messages every 10 seconds
-      const interval = setInterval(() => {
-        const mockMessages = [
-          {
-            type: 'threat_detected',
-            data: {
-              email: 'suspicious@example.com',
-              threat_level: Math.floor(Math.random() * 40) + 60, // 60-100%
-              threat_type: ['Phishing', 'Malware', 'Social Engineering'][Math.floor(Math.random() * 3)],
-              timestamp: new Date().toISOString(),
-            }
-          },
-          {
-            type: 'email_processed',
-            data: {
-              email: 'newsletter@legitimate.com',
-              threat_level: Math.floor(Math.random() * 20), // 0-20%
-              status: 'delivered',
-              timestamp: new Date().toISOString(),
-            }
-          },
-          {
-            type: 'system_update',
-            data: {
-              message: 'ML models updated with latest threat patterns',
-              timestamp: new Date().toISOString(),
-            }
-          }
-        ]
+    // WebSocket connection logic
+    const connectWebSocket = () => {
+      try {
+        ws.current = new WebSocket(wsUrl)
         
-        const randomMessage = mockMessages[Math.floor(Math.random() * mockMessages.length)]
-        setLastMessage(randomMessage)
-      }, 10000) // Every 10 seconds
-
-      return () => {
-        clearInterval(interval)
-        setIsConnected(false)
+        ws.current.onopen = () => {
+          setIsConnected(true)
+        }
+        
+        ws.current.onmessage = (event) => {
+          try {
+            const message = JSON.parse(event.data)
+            setLastMessage(message)
+          } catch (error) {
+            console.error('Failed to parse WebSocket message:', error)
+          }
+        }
+        
+        ws.current.onclose = () => {
+          setIsConnected(false)
+        }
+        
+        ws.current.onerror = (error) => {
+          console.error('WebSocket error:', error)
+          setIsConnected(false)
+        }
+        
+        return () => {
+          if (ws.current) {
+            ws.current.close()
+          }
+        }
+      } catch (error) {
+        console.error('Failed to create WebSocket connection:', error)
+        return () => {}
       }
     }
 
-    const cleanup = simulateConnection()
+    const cleanup = connectWebSocket()
 
     return cleanup
   }, [url])

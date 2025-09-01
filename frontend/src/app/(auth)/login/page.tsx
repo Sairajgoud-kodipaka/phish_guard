@@ -139,14 +139,7 @@ export default function LoginPage() {
               </div>
             </form>
 
-            {/* Demo Credentials */}
-            <div className="mt-6 p-4 bg-gray-50 rounded-md">
-              <h4 className="text-sm font-medium text-gray-900 mb-2">Demo Credentials:</h4>
-              <div className="text-xs text-gray-600 space-y-1">
-                <div><strong>Email:</strong> admin@phishguard.com</div>
-                <div><strong>Password:</strong> demo123</div>
-              </div>
-            </div>
+
           </CardContent>
         </Card>
 

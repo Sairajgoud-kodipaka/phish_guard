@@ -20,7 +20,7 @@ from app.schemas.threat import ThreatResponse, ThreatUpdateRequest, ThreatStatsR
 router = APIRouter()
 
 
-@router.get("/", response_model=List[ThreatResponse])
+@router.get("/list", response_model=List[ThreatResponse])
 async def get_threats(
     current_user: dict = Depends(get_current_user_from_token),
     db: AsyncSession = Depends(get_async_db),

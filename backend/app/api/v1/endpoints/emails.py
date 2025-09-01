@@ -11,12 +11,13 @@ import re
 from typing import List, Optional, Any, Dict, Union
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File, Form, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, or_, desc, func
 from sqlalchemy.orm import selectinload
 
 from app.core.database import get_async_db
+from app.core.security import get_current_user_from_token
 from app.models.email import Email
 from app.models.threat import Threat
 from app.schemas.email import EmailResponse, EmailAnalysisResponse, EmailTextAnalysisRequest
@@ -654,26 +655,66 @@ class ThreatAnalyzer:
 
 @router.get("/stats/summary")
 async def get_email_stats(
-    days: int = Query(default=30, ge=1, le=365, description="Number of days for statistics")
+    days: int = Query(default=30, ge=1, le=365, description="Number of days for statistics"),
+    db: AsyncSession = Depends(get_async_db)
 ):
     """Get email statistics summary"""
     try:
-        # For now, return demo data to get the frontend working
+        # Calculate date range
+        end_date = datetime.utcnow()
+        start_date = end_date - timedelta(days=days)
+        
+        # Get total emails in period
+        total_emails_query = select(func.count(Email.id)).where(
+            Email.created_at >= start_date
+        )
+        total_emails = await db.scalar(total_emails_query) or 0
+        
+        # Get threat distribution
+        threat_dist_query = select(
+            Email.threat_level,
+            func.count(Email.id)
+        ).where(
+            Email.created_at >= start_date
+        ).group_by(Email.threat_level)
+        
+        threat_dist_result = await db.execute(threat_dist_query)
+        threat_distribution = {
+            "clean": 0,
+            "low": 0,
+            "medium": 0,
+            "high": 0,
+            "critical": 0
+        }
+        
+        for level, count in threat_dist_result:
+            if level in threat_distribution:
+                threat_distribution[level] = count
+        
+        # Get action distribution
+        action_dist_query = select(
+            Email.action_taken,
+            func.count(Email.id)
+        ).where(
+            Email.created_at >= start_date
+        ).group_by(Email.action_taken)
+        
+        action_dist_result = await db.execute(action_dist_query)
+        action_distribution = {
+            "allow": 0,
+            "quarantine": 0,
+            "block": 0
+        }
+        
+        for action, count in action_dist_result:
+            if action in action_distribution:
+                action_distribution[action] = count
+        
         return {
             "period_days": days,
-            "total_emails": 0,
-            "threat_distribution": {
-                "clean": 0,
-                "low": 0,
-                "medium": 0,
-                "high": 0,
-                "critical": 0
-            },
-            "action_distribution": {
-                "allow": 0,
-                "quarantine": 0,
-                "block": 0
-            },
+            "total_emails": total_emails,
+            "threat_distribution": threat_distribution,
+            "action_distribution": action_distribution,
             "generated_at": datetime.utcnow().isoformat()
         }
         
@@ -683,47 +724,266 @@ async def get_email_stats(
             detail=f"Failed to get email statistics: {str(e)}"
         )
 
-@router.get("/")
+@router.get("/recent")
 async def get_recent_emails(
     limit: int = Query(default=10, ge=1, le=100, description="Number of emails to return"),
-    days: int = Query(default=30, ge=1, le=365, description="Number of days to look back")
+    days: int = Query(default=30, ge=1, le=100, description="Number of days to look back"),
+    db: AsyncSession = Depends(get_async_db)
 ):
     """Get recent emails with optional filtering"""
     try:
-        # For now, return demo data to get the frontend working
-        demo_emails = [
-            {
-                "id": 1,
-                "subject": "Welcome to PhishGuard",
-                "sender_email": "noreply@phishguard.com",
-                "threat_score": 0.1,
-                "threat_level": "clean",
-                "is_phishing": False,
-                "is_spam": False,
-                "is_malware": False,
-                "action_taken": "allow",
-                "created_at": datetime.utcnow().isoformat(),
-                "processing_time": 0.5
-            },
-            {
-                "id": 2,
-                "subject": "Security Alert - Suspicious Activity",
-                "sender_email": "security@example.com",
-                "threat_score": 0.8,
-                "threat_level": "high",
-                "is_phishing": True,
-                "is_spam": False,
-                "is_malware": False,
-                "action_taken": "quarantine",
-                "created_at": (datetime.utcnow() - timedelta(hours=2)).isoformat(),
-                "processing_time": 1.2
-            }
-        ]
+        # Calculate date range
+        end_date = datetime.utcnow()
+        start_date = end_date - timedelta(days=days)
         
-        return demo_emails[:limit]
+        # Get recent emails
+        recent_emails_query = select(Email).where(
+            Email.created_at >= start_date
+        ).order_by(desc(Email.created_at)).limit(limit)
+        
+        recent_emails_result = await db.execute(recent_emails_query)
+        recent_emails = recent_emails_result.scalars().all()
+        
+        # Convert to response format
+        emails_response = []
+        for email in recent_emails:
+            emails_response.append({
+                "id": email.id,
+                "message_id": email.message_id,
+                "subject": email.subject,
+                "sender_email": email.sender_email,
+                "sender_name": email.sender_name,
+                "recipient_email": email.recipient_email,
+                "recipient_name": email.recipient_name,
+                "date_sent": email.date_sent,
+                "email_size": email.email_size,
+                "body_text": email.body_text,
+                "body_html": email.body_html,
+                "threat_score": email.threat_score,
+                "threat_level": email.threat_level,
+                "is_phishing": email.is_phishing,
+                "is_spam": email.is_spam,
+                "is_malware": email.is_malware,
+                "confidence_score": email.confidence_score,
+                "action_taken": email.action_taken,
+                "processing_time": email.processing_time,
+                "created_at": email.created_at,
+                "updated_at": email.updated_at
+            })
+        
+        return emails_response
         
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get recent emails: {str(e)}"
+        )
+
+@router.post("/analyze-text")
+async def analyze_email_text(
+    request: EmailTextAnalysisRequest = Body(..., embed=False),
+    current_user: dict = None,
+    db: AsyncSession = Depends(get_async_db)
+):
+    """Analyze email text content for threats"""
+    try:
+        print(f"🔍 TEXT ANALYSIS: Starting analysis for content length: {len(request.content)}")
+        from app.services.enhanced_threat_analyzer import enhanced_analyzer
+        
+        # Analyze the email using ML model
+        analysis_result = await enhanced_threat_analyzer.analyze_email(request.content)
+        print(f"🤖 TEXT ANALYSIS: ML analysis result: {analysis_result}")
+        
+        # Get or create default organization
+        from app.models.organization import Organization
+        
+        # Check if default organization exists
+        org_query = select(Organization).where(Organization.domain == "default.local")
+        org_result = await db.execute(org_query)
+        default_org = org_result.scalar_one_or_none()
+        
+        if not default_org:
+            # Create default organization
+            default_org = Organization(
+                name="Default Organization",
+                domain="default.local",
+                description="Default organization for testing",
+                contact_email="admin@default.local",
+                is_active=True
+            )
+            db.add(default_org)
+            await db.commit()
+            await db.refresh(default_org)
+        
+        # Create email record in database
+        email_record_data = {
+            "message_id": f"text_{hashlib.md5(request.content.encode()).hexdigest()}",
+            "subject": "Text Analysis",
+            "sender_email": "unknown@text.analysis",
+            "sender_name": "Text Analysis",
+            "recipient_email": "user@system",
+            "recipient_name": "User",
+            "date_sent": datetime.utcnow(),
+            "date_received": datetime.utcnow(),  # Required field
+            "email_size": len(request.content),
+            "body_text": request.content,
+            "body_html": "",
+            "urls": [],  # Required field
+            "attachments": [],  # Required field
+            "status": "completed",  # Required field
+            "threat_score": 0.8 if analysis_result.get('is_spam') else 0.1,
+            "threat_level": analysis_result.get('threat_level', 'unknown'),
+            "is_phishing": analysis_result.get('is_spam', False),
+            "is_spam": analysis_result.get('is_spam', False),
+            "is_malware": False,
+            "analysis_results": {},  # Required field
+            "ml_predictions": {},  # Required field
+            "confidence_score": analysis_result.get('confidence', 0.0),
+            "action_taken": "quarantine" if analysis_result.get('is_spam') else "allow",
+            "quarantined": False,  # Required field
+            "user_reported": False,  # Required field
+            "false_positive": False,  # Required field
+            "organization_id": default_org.id,  # Required field
+            "processing_time": 0.1,
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow()
+        }
+        
+        # Save to database - TEXT ANALYSIS ENDPOINT
+        email_record = Email(**email_record_data)
+        db.add(email_record)
+        await db.commit()
+        await db.refresh(email_record)
+        
+        # Transform the result to match frontend expectations
+        email_analysis_result = {
+            "email_id": email_record.id,
+            "threat_score": email_record.threat_score,
+            "threat_level": email_record.threat_level,
+            "is_phishing": email_record.is_phishing,
+            "is_spam": email_record.is_spam,
+            "is_malware": email_record.is_malware,
+            "confidence_score": email_record.confidence_score,
+            "recommended_action": email_record.action_taken,
+            "threat_indicators": ["ML classification"] if email_record.is_spam else [],
+            "analysis_summary": analysis_result,
+            "processing_time": email_record.processing_time
+        }
+        
+        print(f"🎯 TEXT ANALYSIS: Returning result with email_id: {email_record.id}")
+        return email_analysis_result
+        
+    except Exception as e:
+        print(f"❌ TEXT ANALYSIS: General error: {e}")
+        import traceback
+        print(f"❌ TEXT ANALYSIS: Traceback: {traceback.format_exc()}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to analyze email text: {str(e)}"
+        )
+
+@router.post("/analyze")
+async def analyze_email_file(
+    file: UploadFile = File(..., description="Email file to analyze"),
+    current_user: dict = None,
+    db: AsyncSession = Depends(get_async_db)
+):
+    """Analyze uploaded email file for threats"""
+    try:
+        from app.services.enhanced_threat_analyzer import enhanced_analyzer
+        
+        # Read file content
+        file_content = await file.read()
+        
+        # Try to decode as text first
+        try:
+            email_text = file_content.decode('utf-8')
+        except UnicodeDecodeError:
+            email_text = file_content.decode('latin-1', errors='ignore')
+        
+        # Analyze the email using ML model
+        analysis_result = await enhanced_analyzer.analyze_email(email_text)
+        
+        # Get or create default organization
+        from app.models.organization import Organization
+        
+        # Check if default organization exists
+        org_query = select(Organization).where(Organization.domain == "default.local")
+        org_result = await db.execute(org_query)
+        default_org = org_result.scalar_one_or_none()
+        
+        if not default_org:
+            # Create default organization
+            default_org = Organization(
+                name="Default Organization",
+                domain="default.local",
+                description="Default organization for testing",
+                contact_email="admin@default.local",
+                is_active=True
+            )
+            db.add(default_org)
+            await db.commit()
+            await db.refresh(default_org)
+        
+        # Create email record in database
+        email_data = {
+            "message_id": f"file_{hashlib.md5(file_content).hexdigest()}",
+            "subject": f"File Analysis: {file.filename}",
+            "sender_email": "unknown@file.analysis",
+            "sender_name": "File Analysis",
+            "recipient_email": "user@system",
+            "recipient_name": "User",
+            "date_sent": datetime.utcnow(),
+            "date_received": datetime.utcnow(),  # Required field
+            "email_size": len(email_text),
+            "body_text": email_text,
+            "body_html": "",
+            "urls": [],  # Required field
+            "attachments": [],  # Required field
+            "status": "completed",  # Required field
+            "threat_score": 0.8 if analysis_result.get('is_spam') else 0.1,
+            "threat_level": analysis_result.get('threat_level', 'unknown'),
+            "is_phishing": analysis_result.get('is_spam', False),
+            "is_spam": analysis_result.get('is_spam', False),
+            "is_malware": False,
+            "analysis_results": {},  # Required field
+            "ml_predictions": {},  # Required field
+            "confidence_score": analysis_result.get('confidence', 0.0),
+            "action_taken": "quarantine" if analysis_result.get('is_spam') else "allow",
+            "quarantined": False,  # Required field
+            "user_reported": False,  # Required field
+            "false_positive": False,  # Required field
+            "organization_id": default_org.id,  # Required field
+            "processing_time": 0.1,
+            "created_at": datetime.utcnow(),
+            "updated_at": datetime.utcnow()
+        }
+        
+        # Save to database
+        email_record = Email(**email_data)
+        db.add(email_record)
+        await db.commit()
+        await db.refresh(email_record)
+        
+        # Transform the result to match frontend expectations
+        email_analysis_result = {
+            "email_id": email_record.id,
+            "threat_score": email_record.threat_score,
+            "threat_level": email_record.threat_level,
+            "is_phishing": email_record.is_phishing,
+            "is_spam": email_record.is_spam,
+            "is_malware": email_record.is_malware,
+            "confidence_score": email_record.confidence_score,
+            "recommended_action": email_record.action_taken,
+            "threat_indicators": ["ML classification"] if email_record.is_spam else [],
+            "analysis_summary": analysis_result,
+            "processing_time": email_record.processing_time
+        }
+        
+        return email_analysis_result
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to analyze email file: {str(e)}"
         ) 

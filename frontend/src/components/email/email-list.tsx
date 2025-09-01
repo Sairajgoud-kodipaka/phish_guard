@@ -34,64 +34,7 @@ interface Email {
   attachments: number
 }
 
-// Mock email data
-const emails: Email[] = [
-  {
-    id: 1,
-    from: 'urgent-payment@fake-bank.com',
-    subject: 'URGENT: Verify Your Account Immediately',
-    body: 'Your account will be suspended unless you verify...',
-    receivedAt: new Date(Date.now() - 5 * 60 * 1000), // 5 minutes ago
-    threatLevel: 89,
-    threatType: 'Phishing',
-    status: 'blocked',
-    attachments: 0,
-  },
-  {
-    id: 2,
-    from: 'invoice@legitimate-company.com',
-    subject: 'Monthly Invoice - December 2024',
-    body: 'Please find attached your monthly invoice...',
-    receivedAt: new Date(Date.now() - 15 * 60 * 1000), // 15 minutes ago
-    threatLevel: 12,
-    threatType: null,
-    status: 'delivered',
-    attachments: 1,
-  },
-  {
-    id: 3,
-    from: 'security-alert@malware-site.org',
-    subject: 'Security Alert: Suspicious Activity Detected',
-    body: 'Click here to secure your account...',
-    receivedAt: new Date(Date.now() - 60 * 60 * 1000), // 1 hour ago
-    threatLevel: 94,
-    threatType: 'Malware',
-    status: 'quarantined',
-    attachments: 2,
-  },
-  {
-    id: 4,
-    from: 'newsletter@trusted-source.com',
-    subject: 'Weekly Security Newsletter',
-    body: 'This week in cybersecurity...',
-    receivedAt: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-    threatLevel: 5,
-    threatType: null,
-    status: 'delivered',
-    attachments: 0,
-  },
-  {
-    id: 5,
-    from: 'document-shared@credential-harvest.com',
-    subject: 'Shared Document: Q4 Financial Report.pdf',
-    body: 'A document has been shared with you...',
-    receivedAt: new Date(Date.now() - 3 * 60 * 60 * 1000), // 3 hours ago
-    threatLevel: 82,
-    threatType: 'Credential Harvesting',
-    status: 'blocked',
-    attachments: 1,
-  },
-]
+const emails: Email[] = []
 
 const statusColors: Record<EmailStatus, 'success' | 'warning' | 'destructive'> = {
   delivered: 'success',

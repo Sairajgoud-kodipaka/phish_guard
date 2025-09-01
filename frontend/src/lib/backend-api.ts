@@ -5,7 +5,7 @@
 
 import { DashboardStats, ThreatTimelineItem, RecentActivity } from '@/types'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+const API_BASE_URL = 'http://localhost:8000'
 
 class BackendApiClient {
   private baseURL: string
@@ -38,13 +38,21 @@ class BackendApiClient {
     }
 
     try {
+      console.log('🔍 Frontend: Making request to:', url)
+      console.log('🔍 Frontend: Request method:', options.method || 'GET')
+      console.log('🔍 Frontend: Request headers:', headers)
+      console.log('🔍 Frontend: Request body:', options.body)
+
       const response = await fetch(url, {
         ...options,
         headers,
       })
 
+      console.log('🔍 Frontend: Response status:', response.status)
+
       if (!response.ok) {
         const errorText = await response.text()
+        console.error('🔍 Frontend: API error response:', errorText)
         throw new Error(`API Error: ${response.status} - ${errorText}`)
       }
 
@@ -78,13 +86,32 @@ class BackendApiClient {
 
   // Email Analysis APIs
   async analyzeEmail(emailContent: string) {
+    if (!emailContent.trim()) {
+      throw new Error('Email content cannot be empty')
+    }
+    
+    const requestBody = { content: emailContent }
+    console.log('🔍 Frontend: Sending request to /emails/analyze-text with body:', requestBody)
+    
     return this.request('/emails/analyze-text', {
       method: 'POST',
-      body: JSON.stringify({ content: emailContent }),
+      body: JSON.stringify(requestBody),
     })
   }
 
   async analyzeEmailFile(file: File) {
+    if (!file) {
+      throw new Error('No file provided')
+    }
+    
+    if (file.size === 0) {
+      throw new Error('File is empty')
+    }
+    
+    if (file.size > 10 * 1024 * 1024) { // 10MB limit
+      throw new Error('File too large (max 10MB)')
+    }
+    
     const formData = new FormData()
     formData.append('file', file)
 
@@ -97,7 +124,7 @@ class BackendApiClient {
 
   // Real Email Data APIs
   async getRecentEmails(limit: number = 10, days: number = 30) {
-    return this.request(`/emails?limit=${limit}&days=${days}`)
+    return this.request(`/emails/recent?limit=${limit}&days=${days}`)
   }
 
   async getEmailStats(days: number = 30) {
@@ -108,9 +135,38 @@ class BackendApiClient {
     return this.request(`/emails/${emailId}`)
   }
 
-  // Health check
+  // Health check - uses root endpoint, not API versioned one
   async healthCheck() {
-    return this.request('/health')
+    console.log('Performing health check...')
+    try {
+      const result = await fetch(`${API_BASE_URL}/health`)
+      if (!result.ok) {
+        throw new Error(`Health check failed: ${result.status}`)
+      }
+      const data = await result.json()
+      console.log('Health check successful:', data)
+      return data
+    } catch (error) {
+      console.error('Health check failed:', error)
+      throw error
+    }
+  }
+  
+  // Test connection to backend
+  async testConnection() {
+    console.log('Testing backend connection...')
+    try {
+      const result = await this.healthCheck()
+      console.log('Backend connection test successful')
+      return { success: true, data: result }
+    } catch (error) {
+      console.error('Backend connection test failed:', error)
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error',
+        details: error
+      }
+    }
   }
 }
 

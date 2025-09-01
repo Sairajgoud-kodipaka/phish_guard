@@ -354,44 +354,6 @@ export const handleApiError = (error: any): string => {
   return 'An unexpected error occurred'
 }
 
-// Mock data flag - remove in production
-export const USE_MOCK_DATA = process.env.NODE_ENV === 'development' && !process.env.NEXT_PUBLIC_API_URL
 
-// Mock API implementation for development
-export const mockApi = {
-  login: async (email: string, password: string) => {
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    if (email === 'admin@phishguard.com' && password === 'demo123') {
-      return {
-        data: {
-          token: 'mock-jwt-token',
-          user: { id: 1, email, name: 'Demo User', role: 'Administrator' }
-        },
-        status: 'success' as const
-      }
-    }
-    throw new Error('Invalid credentials')
-  },
-  
-  getDashboard: async () => {
-    await new Promise(resolve => setTimeout(resolve, 500))
-    return {
-      stats: {
-        totalEmails: 12847,
-        threatsDetected: 324,
-        falsePositives: 23,
-        detectionAccuracy: 97.2,
-        change: {
-          totalEmails: '+12%',
-          threatsDetected: '-8%',
-          falsePositives: '+2%',
-          detectionAccuracy: '+0.3%',
-        },
-      },
-      threats: [],
-      activity: [],
-    }
-  },
-}
 
 export default apiClient 

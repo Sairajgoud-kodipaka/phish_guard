@@ -2,15 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
-// Mock data for the timeline
-const timelineData = [
-  { time: '00:00', threats: 12, blocked: 8, quarantined: 3, delivered: 1 },
-  { time: '04:00', threats: 8, blocked: 5, quarantined: 2, delivered: 1 },
-  { time: '08:00', threats: 23, blocked: 18, quarantined: 4, delivered: 1 },
-  { time: '12:00', threats: 35, blocked: 28, quarantined: 6, delivered: 1 },
-  { time: '16:00', threats: 19, blocked: 15, quarantined: 3, delivered: 1 },
-  { time: '20:00', threats: 16, blocked: 12, quarantined: 3, delivered: 1 },
-]
+const timelineData: any[] = []
 
 export function ThreatTimeline() {
   const maxThreats = Math.max(...timelineData.map(d => d.threats))

@@ -103,7 +103,7 @@ async def get_async_db() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:
         try:
             yield session
-            await session.commit()
+            # Don't auto-commit, let the endpoint handle it
         except Exception as e:
             await session.rollback()
             logger.error("Database session error", error=str(e))
@@ -137,7 +137,7 @@ async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:
         try:
             yield session
-            await session.commit()
+            # Don't auto-commit, let the caller handle it
         except Exception as e:
             await session.rollback()
             logger.error("Database session error", error=str(e))
@@ -271,7 +271,7 @@ async def create_sample_data(session: AsyncSession):
         
         # Create default organization
         org = Organization(
-            name="PhishGuard Demo",
+            name="PhishGuard",
             domain="phishguard.com",
             is_active=True
         )
@@ -283,7 +283,7 @@ async def create_sample_data(session: AsyncSession):
             email=settings.TEST_USER_EMAIL,
             username="admin",
             hashed_password=get_password_hash(settings.TEST_USER_PASSWORD),
-            full_name="Demo Administrator",
+            full_name="Administrator",
             is_active=True,
             is_superuser=True,
             organization_id=org.id
